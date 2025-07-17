@@ -1,7 +1,7 @@
 from Application import app
 import configparser
 import pymongo # type: ignore
-from flask import jsonify
+from flask import jsonify # type: ignore
 from ..database.models import User
 
 # from backend.Application.routes.auth import token_required

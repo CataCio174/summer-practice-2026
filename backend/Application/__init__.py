@@ -30,15 +30,3 @@ sched.start()
 from .routes.users import app
 from .routes.auth import app
 from .routes.device import app
-
-
-
-  
-
-
-
-
-
-
-
-

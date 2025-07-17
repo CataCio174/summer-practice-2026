@@ -1,5 +1,5 @@
 from Application import app
-from flask import jsonify, request
+from flask import jsonify, request # type: ignore
 from ..database.models import Device
 
 
