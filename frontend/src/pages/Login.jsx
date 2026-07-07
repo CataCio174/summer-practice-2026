@@ -32,8 +32,10 @@ function Login() {
             const data = await response.json();
             console.log(data);
             if (data.access_token) {
-                localStorage.setItem("access_token", data.access_token);
-                localStorage.setItem("role", data.role);
+                sessionStorage.setItem("access_token", data.access_token);
+                sessionStorage.setItem("role", data.role || "");
+                sessionStorage.setItem("group", data.group || "");
+                sessionStorage.setItem("name", data.name || data.loggedinUser || username);
                 navigate("/home");
             } else {
                 setErrorMessage("Invalid credentials");
@@ -86,7 +88,7 @@ function Login() {
                 }}
             >
                 <Card sx={{ width: "100%", maxWidth: 420 }}>
-                    <CardHeader title="Login" />
+                    <CardHeader title="Login" sx={{ textAlign: "center", pb: 0 }} />
                     <CardContent>
                         <form onSubmit={handleLogin}>
                             <TextField
@@ -95,6 +97,7 @@ function Login() {
                                 label="Username"
                                 variant="outlined"
                                 fullWidth
+                                required
                                 onChange={(e) => setUsername(e.target.value)}
                             />
                             <Box sx={{ height: 16 }} />
@@ -105,6 +108,7 @@ function Login() {
                                 type="password"
                                 variant="outlined"
                                 fullWidth
+                                required
                                 onChange={(e) => setPassword(e.target.value)}
                             />
                             <Box sx={{ height: 20 }} />

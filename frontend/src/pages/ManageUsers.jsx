@@ -21,6 +21,7 @@ import {
 
 const ManageUsers = () => {
   const [users, setUsers] = useState([]);
+  const [name, setName] = useState('');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('user');
@@ -51,11 +52,12 @@ const ManageUsers = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username, password, role, site, group }),
+        body: JSON.stringify({ name, username, password, role, site, group }),
       });
 
       const data = await response.json();
       setMessage(data.message);
+      setName('');
       setUsername('');
       setPassword('');
       setRole('user');
@@ -75,7 +77,16 @@ const ManageUsers = () => {
 
       <form onSubmit={handleRegister}>
         <Grid container spacing={2}>
-          <Grid item xs={12} sm={3}>
+          <Grid item xs={12} sm={2}>
+            <TextField
+              fullWidth
+              label="Full Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+          </Grid>
+          <Grid item xs={12} sm={2}>
             <TextField
               fullWidth
               label="Username"
@@ -84,7 +95,7 @@ const ManageUsers = () => {
               required
             />
           </Grid>
-          <Grid item xs={12} sm={3}>
+          <Grid item xs={12} sm={2}>
             <TextField
               fullWidth
               type="password"
@@ -160,6 +171,7 @@ const ManageUsers = () => {
           <Table>
             <TableHead>
               <TableRow>
+                <TableCell>Name</TableCell>
                 <TableCell>Username</TableCell>
                 <TableCell>Role</TableCell>
                 <TableCell>Site</TableCell>
@@ -169,6 +181,7 @@ const ManageUsers = () => {
             <TableBody>
               {users.map((user) => (
                 <TableRow key={user.id}>
+                  <TableCell>{user.name}</TableCell>
                   <TableCell>{user.username}</TableCell>
                   <TableCell>{user.role}</TableCell>
                   <TableCell>{user.site}</TableCell>

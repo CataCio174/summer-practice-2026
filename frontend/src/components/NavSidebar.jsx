@@ -7,7 +7,9 @@ import {
     ListItemText,
     Divider,
     Box,
-    Button,
+    Avatar,
+    IconButton,
+    Typography,
 } from "@mui/material";
 import { Home } from "@mui/icons-material";
 import CellTowerIcon from "@mui/icons-material/CellTower";
@@ -23,18 +25,18 @@ const NavSidebar = () => {
     const navigate = useNavigate();
 
     const logoutUser = () => {
-        localStorage.clear();
+        sessionStorage.clear();
         navigate("/login");
     };
 
-    const role = localStorage.getItem("role");
+    const role = sessionStorage.getItem("role");
+    const fullName = sessionStorage.getItem("name") || "User";
     const isAdmin = role && role.includes("admin");
 
     const navItems = [
         { label: "Home", icon: <Home />, path: "/home" },
-        { label: "Devices", icon: <CellTowerIcon />, path: "/devices" },
         { label: "Dashboard", icon: <BarChartIcon />, path: "/dashboard" },
-        { label: "Profile", icon: <PersonIcon />, path: "/profile" },
+        { label: "Devices", icon: <CellTowerIcon />, path: "/devices" },
         ...(isAdmin ? [{ label: "Manage Users", icon: <ManageAccountsIcon />, path: "/manage-users" }] : []),
     ];
 
@@ -65,11 +67,33 @@ const NavSidebar = () => {
                 </List>
             </Box>
             <Divider />
-            <Box sx={{ p: 2 }}>
-                <Button variant="outlined" startIcon={<LogoutIcon />} onClick={logoutUser} fullWidth>
-                    Logout
-                </Button>
-            </Box>
+            <List>
+                <ListItem disablePadding>
+                    <ListItemButton onClick={() => navigate("/profile")}>
+                        <ListItemIcon>
+                            <Avatar sx={{ width: 32, height: 32 }} />
+                        </ListItemIcon>
+                        <ListItemText
+                            primary={
+                                <Typography variant="body2" noWrap>
+                                    {fullName}
+                                </Typography>
+                            }
+                        />
+                        <IconButton
+                            edge="end"
+                            aria-label="logout"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                logoutUser();
+                            }}
+                            size="small"
+                        >
+                            <LogoutIcon fontSize="small" />
+                        </IconButton>
+                    </ListItemButton>
+                </ListItem>
+            </List>
         </Drawer>
     );
 };
