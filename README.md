@@ -83,3 +83,9 @@ Install Robot Framework and Browser Library:
 $ pip install robotframework robotframework-browser
 $ rfbrowser init
 ```
+
+### Results
+
+- The backend has started a server on [http://localhost:5000](http://localhost:5000).
+- The frontend has started a server on [http://localhost:5173](http://localhost:5173). **Open this in your browser.**
+- On application startup, **only if running in development mode** a test user `admin:testuser` will be created. Log in with username `admin` and password `testuser`. If the user already exists, it will not be overwritten.
