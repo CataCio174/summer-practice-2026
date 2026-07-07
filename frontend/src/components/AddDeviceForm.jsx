@@ -3,7 +3,7 @@ import { Button, TextField, Select, MenuItem, FormControl, InputLabel, Grid } fr
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-axios.defaults.baseURL = 'http://localhost:5000';
+axios.defaults.baseURL = '/api';
 
 const AddDeviceForm = () => {
   const [formData, setFormData] = useState({
