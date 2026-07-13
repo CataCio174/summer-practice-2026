@@ -1,7 +1,7 @@
 from Application import app
 from flask import jsonify, request # type: ignore
 from ..database.models import Device
-
+from bson import ObjectId
 
 @app.route('/devices', methods=['GET'])
 def get_devices():
@@ -18,6 +18,23 @@ def add_device():
         new_device = Device(**device_data)
         new_device.save()
         return jsonify({'message': 'Device added successfully'}), 201
+            
     except Exception as e:
         print(e)
         return jsonify({'error': str(e)}), 400
+    
+@app.route('/device/<_id>', methods=['DELETE'])
+def remove_device(_id):
+    try:
+        deviceToDelete = Device.objects(id=ObjectId(_id))
+        if deviceToDelete:
+            deviceToDelete.delete()
+            return jsonify({'message': 'Device deleted successfully'}), 200
+        else:
+            return jsonify({'error': 'Device not found'}), 404
+    except Exception as e:
+        print(e)
+        return jsonify({'error': str(e)}), 400
+    
+    
+         
