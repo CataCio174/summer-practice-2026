@@ -1,0 +1,19 @@
+{
+  // --- Python interpreter (used by the Run/Debug + Python extension) ---
+  "python.defaultInterpreterPath": "${workspaceFolder}/backend/venv/Scripts/python.exe",
+  "python.terminal.activateEnvironment": true,
+
+  // --- Force every new terminal to activate the backend venv ---
+  // This runs regardless of the Python extension, so it's reliable.
+  "terminal.integrated.defaultProfile.windows": "PowerShell (venv)",
+  "terminal.integrated.profiles.windows": {
+    "PowerShell (venv)": {
+      "source": "PowerShell",
+      "args": [
+        "-NoExit",
+        "-Command",
+        ". '${workspaceFolder}\\backend\\venv\\Scripts\\Activate.ps1'"
+      ]
+    }
+  }
+}
