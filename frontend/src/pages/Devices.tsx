@@ -26,6 +26,7 @@ const DeviceTable = () => {
   const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false);
   const [selectedAction, setSelectedAction] = useState<ActionType>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [deviceToDelete, setDeviceToDelete] = useState<Device | null>(null);
 
   const fetchDevices = async () => {
     try {
@@ -56,6 +57,16 @@ const DeviceTable = () => {
     setSelectedDevice(null);
   };
 
+  const handleConfirmRemove = async () => {
+    if (!deviceToDelete) return;
+    await handleRemove(deviceToDelete._id.$oid);
+    setDeviceToDelete(null);
+  };
+
+  const handleCancelRemove = () => {
+    setDeviceToDelete(null);
+  };
+
   const handleRemove = async (id: string) => {
     try {
       const response = await fetch("/api/device/" + id, {
@@ -70,6 +81,7 @@ const DeviceTable = () => {
       console.error("Error fetching devices:", error);
     }
   };
+
   const handleStartEdit = (device: Device) => {
     setEditingDevice(device);
     setIsAddDialogOpen(true);
@@ -84,7 +96,7 @@ const DeviceTable = () => {
         handleStartEdit(device);
         break;
       case "remove":
-        handleRemove(device._id.$oid);
+        setDeviceToDelete(device);
         break;
       default:
         break;
@@ -217,6 +229,21 @@ const DeviceTable = () => {
           </Button>
         </DialogActions>
       </Dialog>
+      
+      <Dialog open={Boolean(deviceToDelete)} onClose={handleCancelRemove}>
+        <DialogTitle>Delete Device</DialogTitle>
+        <DialogContent>
+          Are you sure you want to delete "{deviceToDelete?.deviceName}"? This
+          action cannot be undone.
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCancelRemove}>Cancel</Button>
+          <Button onClick={handleConfirmRemove} color="error" variant="contained">
+           Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+      
       <DeviceForm
         open={isAddDialogOpen}
         device={editingDevice}
