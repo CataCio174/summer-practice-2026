@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
     Alert,
     Button,
@@ -35,17 +35,43 @@ interface AddDeviceFormProps {
     open?: boolean;
     onClose?: () => void;
     onSuccess?: (createdDevice: unknown) => void;
+    device?: any; // Permitem primirea dispozitivului pentru editare
 }
 
-const AddDeviceForm = ({ open = false, onClose, onSuccess }: AddDeviceFormProps) => {
+const AddDeviceForm = ({ open = false, onClose, onSuccess, device }: AddDeviceFormProps) => {
     const [formData, setFormData] = useState({
         ...initialFormData,
     });
     const [error, setError] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
 
+    // Când formularul se deschide, verificăm dacă avem un dispozitiv trimis (modul Editare)
+    useEffect(() => {
+        if (open && device) {
+            setFormData({
+                deviceName: device.deviceName || "",
+                deviceSlNo: device.deviceSlNo || "",
+                deviceType: device.deviceType || "",
+                hwType: device.hwType || "",
+                site: device.site || "",
+                group: device.group || "",
+                owner: device.owner || "",
+                connectivityType: device.connectivityType || "",
+                ip: device.ip || "",
+                port: device.port || "",
+                loginUser: device.loginUser || "",
+                password: device.password || "",
+                readCommunity: device.readCommunity || "",
+                writeCommunity: device.writeCommunity || "",
+            });
+        } else if (open && !device) {
+            // Dacă nu avem dispozitiv, curățăm formularul (modul Adăugare)
+            setFormData({ ...initialFormData });
+        }
+    }, [open, device]);
+
     /** @param {{ target: { name: string, value: string } }} e */
-    const handleChange = (e) => {
+    const handleChange = (e: any) => {
         const { name, value } = e.target;
         if (error) setError("");
         setFormData({ ...formData, [name]: value });
@@ -59,14 +85,20 @@ const AddDeviceForm = ({ open = false, onClose, onSuccess }: AddDeviceFormProps)
     };
 
     /** @param {import('react').FormEvent<HTMLFormElement>} e */
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: any) => {
         e.preventDefault();
         setIsSubmitting(true);
         setError("");
 
+        // Verificăm dacă suntem în modul Editare
+        const isEdit = !!device;
+        // Construim URL-ul și Metoda în funcție de acțiune
+        const url = isEdit ? `/api/device/${device._id.$oid}` : "/api/device";
+        const method = isEdit ? "PUT" : "POST";
+
         try {
-            const response = await fetch("/api/device", {
-                method: "POST",
+            const response = await fetch(url, {
+                method: method,
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData),
             });
@@ -89,9 +121,9 @@ const AddDeviceForm = ({ open = false, onClose, onSuccess }: AddDeviceFormProps)
             onClose?.();
         } catch (error) {
             if (error instanceof Error) {
-                setError(error.message || "Failed to add device.");
+                setError(error.message || "Failed to save device.");
             } else {
-                setError("Failed to add device.");
+                setError("Failed to save device.");
             }
         } finally {
             setIsSubmitting(false);
@@ -103,7 +135,8 @@ const AddDeviceForm = ({ open = false, onClose, onSuccess }: AddDeviceFormProps)
             open={open}
             onClose={handleDialogClose}
         >
-            <DialogTitle>Add Device</DialogTitle>
+            {/* Schimbăm titlul dinamic în funcție de acțiune */}
+            <DialogTitle>{device ? "Edit Device" : "Add Device"}</DialogTitle>
             <DialogContent dividers>
                 {error && <Alert severity="error">{error}</Alert>}
                 <Stack component="form" id="add-device-form" onSubmit={handleSubmit} direction="row" spacing={2}>

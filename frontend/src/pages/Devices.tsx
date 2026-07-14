@@ -7,11 +7,13 @@ import {
   DialogActions,
   Button,
   Container,
-  Typography,
-  Divider,
-  Box,
+  ListItemIcon,
+  ListItemText,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
+import EventIcon from "@mui/icons-material/Event";
 import {
   MaterialReactTable,
   useMaterialReactTable,
@@ -23,14 +25,23 @@ type ActionType = "schedule" | "edit" | "remove" | null;
 
 const DeviceTable = () => {
   const [devices, setDevices] = useState([]);
-  const [selectedDevice, setSelectedDevice] = useState(null);
+  const [selectedDevice, setSelectedDevice] = useState<any>(null);
   const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false);
-  const [selectedAction, setSelectedAction] = useState(null);
+  const [selectedAction, setSelectedAction] = useState<ActionType>(null);
+  
+  // Stare pentru fereastra de Adăugare/Editare
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
 
   const fetchDevices = async () => {
     try {
-      const response = await fetch("/api/devices");
+      const response = await fetch("/api/devices", {
+        // Aceste setări obligă browser-ul să ceară mereu date proaspete din baza de date
+        cache: "no-store",
+        headers: {
+          "Pragma": "no-cache",
+          "Cache-Control": "no-cache"
+        }
+      });
       if (!response.ok) {
         throw new Error(`Failed to fetch devices: ${response.status}`);
       }
@@ -45,7 +56,7 @@ const DeviceTable = () => {
     fetchDevices();
   }, []);
 
-  const handleScheduleOpen = (device) => {
+  const handleScheduleOpen = (device: any) => {
     setSelectedDevice(device);
     setIsScheduleDialogOpen(true);
     setSelectedAction("schedule");
@@ -57,18 +68,19 @@ const DeviceTable = () => {
     setSelectedDevice(null);
   };
 
+  // Funcția de ștergere instantanee
   const handleRemoving = async (id: string) => {
     try {
       const response = await fetch("/api/device/" + id, {
         method: "DELETE",
       });
       if (!response.ok) {
-        throw new Error(`Failed to fetch devices: ${response.status}`);
+        throw new Error(`Failed to delete device: ${response.status}`);
       }
-      await response.json();
-      setDevices(devices.filter((device) => device._id.$oid !== id));
+      // Reîncărcăm datele de la server pentru a evita ecranul alb
+      fetchDevices(); 
     } catch (error) {
-      console.error("Error fetching devices:", error);
+      console.error("Error deleting device:", error);
     }
   };
 
@@ -78,10 +90,14 @@ const DeviceTable = () => {
         handleScheduleOpen(device);
         break;
       case "edit":
-        // Handle edit action
+        // Deschidem formularul și setăm dispozitivul curent pentru editare
+        setSelectedDevice(device);
+        setIsAddDialogOpen(true);
         break;
       case "remove":
-        handleRemoving(device._id.$oid);
+        // Ștergem instantaneu folosind ID-ul dispozitivului
+        const deviceId = device._id?.$oid || device._id;
+        handleRemoving(deviceId);
         break;
       default:
         break;
@@ -100,7 +116,7 @@ const DeviceTable = () => {
       {
         id: "connection",
         header: "Connection",
-        accessorFn: (row) => {
+        accessorFn: (row: any) => {
           const type = row.connectivityType || "-";
           const ip = row.ip || "-";
           const port = row.port || "-";
@@ -108,7 +124,7 @@ const DeviceTable = () => {
         },
       },
     ],
-    [],
+    []
   );
 
   const table = useMaterialReactTable({
@@ -136,26 +152,40 @@ const DeviceTable = () => {
           handleAction("schedule", row.original);
           closeMenu();
         }}
+        sx={{ py: 1.5, px: 2 }}
       >
-        Schedule
+        <ListItemIcon>
+          <EventIcon fontSize="small" color="primary" />
+        </ListItemIcon>
+        <ListItemText>Programa</ListItemText>
       </MenuItem>,
+
       <MenuItem
         key="edit"
         onClick={() => {
           handleAction("edit", row.original);
           closeMenu();
         }}
+        sx={{ py: 1.5, px: 2 }}
       >
-        Edit
+        <ListItemIcon>
+          <EditIcon fontSize="small" sx={{ color: 'text.secondary' }} />
+        </ListItemIcon>
+        <ListItemText>Edita</ListItemText>
       </MenuItem>,
+
       <MenuItem
         key="remove"
         onClick={() => {
           handleAction("remove", row.original);
           closeMenu();
         }}
+        sx={{ py: 1.5, px: 2, color: "error.main" }}
       >
-        Remove
+        <ListItemIcon>
+          <DeleteIcon fontSize="small" color="error" />
+        </ListItemIcon>
+        <ListItemText>Elimina</ListItemText>
       </MenuItem>,
     ],
   });
@@ -163,19 +193,8 @@ const DeviceTable = () => {
   const handlePerformAction = async () => {
     if (!selectedDevice) return;
     try {
-      switch (selectedAction) {
-        case "schedule":
-          // Perform schedule action with selectedDevice._id
-          console.log(`Scheduled action for device ${selectedDevice._id}`);
-          break;
-        case "edit":
-          // Perform edit action with selectedDevice._id
-          break;
-        case "remove":
-          // Perform remove action with selectedDevice._id
-          break;
-        default:
-          break;
+      if (selectedAction === "schedule") {
+        console.log(`Scheduled action for device ${selectedDevice._id?.$oid || selectedDevice._id}`);
       }
       handleScheduleClose();
     } catch (error) {
@@ -184,11 +203,13 @@ const DeviceTable = () => {
   };
 
   const handleAddDialogOpen = () => {
+    setSelectedDevice(null); // Golim formularul pentru o adăugare nouă
     setIsAddDialogOpen(true);
   };
 
   const handleAddDialogClose = () => {
     setIsAddDialogOpen(false);
+    setSelectedDevice(null);
   };
 
   const handleAddDeviceSuccess = () => {
@@ -199,10 +220,11 @@ const DeviceTable = () => {
     <Container maxWidth={false} disableGutters>
       <PageHeader title="Devices" breadcrumbItems={["Home", "Devices"]} />
       <MaterialReactTable table={table} />
+      
+      {/* Dialog Schedule */}
       <Dialog open={isScheduleDialogOpen} onClose={handleScheduleClose}>
         <DialogTitle>Schedule Action</DialogTitle>
         <DialogContent>
-          {/* Add content for scheduling here */}
           Schedule dialog content...
         </DialogContent>
         <DialogActions>
@@ -212,10 +234,13 @@ const DeviceTable = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      {/* Formular Adăugare / Editare */}
       <AddDeviceForm
         open={isAddDialogOpen}
         onClose={handleAddDialogClose}
         onSuccess={handleAddDeviceSuccess}
+        device={selectedDevice} // Trimitem datele către formularul de editare
       />
     </Container>
   );
