@@ -29,6 +29,8 @@ class Device(Document):
     count = IntField(required=False, default=1)  # câte dispozitive de acest tip
     consumptionPerHour = FloatField(required=False)  # kWh per hour
     
+    # --- Câmpul nou adăugat pentru logica de Schedule ---
+    schedule = DictField(default={}) 
 
 class DailySaving(EmbeddedDocument):
     subId = ObjectIdField(required=True, default=lambda: ObjectId())

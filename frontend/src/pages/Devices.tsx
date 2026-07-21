@@ -9,6 +9,13 @@ import {
   Container,
   ListItemIcon,
   ListItemText,
+  Switch,
+  FormControlLabel,
+  Box,
+  TextField,
+  Typography,
+  ToggleButton,
+  ToggleButtonGroup,
 } from "@mui/material";
 import AddIcon from "@mui/icons-material/Add";
 import EditIcon from "@mui/icons-material/Edit";
@@ -24,6 +31,8 @@ import { Device } from "../types/devices.types";
 
 type ActionType = "schedule" | "edit" | "remove" | null;
 
+const daysOfWeek = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+
 const DeviceTable = () => {
   const [devices, setDevices] = useState<Device[]>([]);
   const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
@@ -32,6 +41,11 @@ const DeviceTable = () => {
   const [selectedAction, setSelectedAction] = useState<ActionType>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [deviceToDelete, setDeviceToDelete] = useState<Device | null>(null);
+
+  const [alwaysOn, setAlwaysOn] = useState(false);
+  const [onTime, setOnTime] = useState("08:00");
+  const [offTime, setOffTime] = useState("16:00");
+  const [activeDays, setActiveDays] = useState<string[]>(["MON", "TUE", "WED", "THU", "FRI"]);
 
   const fetchDevices = async () => {
     try {
@@ -58,6 +72,21 @@ const DeviceTable = () => {
 
   const handleScheduleOpen = (device: Device) => {
     setSelectedDevice(device);
+    
+    const schedule = (device as any).schedule;
+    
+    if (schedule && Object.keys(schedule).length > 0) {
+      setAlwaysOn(schedule.alwaysOn !== undefined ? schedule.alwaysOn : false);
+      setOnTime(schedule.onTime || "08:00");
+      setOffTime(schedule.offTime || "16:00");
+      setActiveDays(schedule.activeDays || ["MON", "TUE", "WED", "THU", "FRI"]);
+    } else {
+      setAlwaysOn(false);
+      setOnTime("08:00");
+      setOffTime("16:00");
+      setActiveDays(["MON", "TUE", "WED", "THU", "FRI"]);
+    }
+
     setIsScheduleDialogOpen(true);
     setSelectedAction("schedule");
   };
@@ -68,10 +97,12 @@ const DeviceTable = () => {
     setSelectedDevice(null);
   };
 
-  // Logica de ștergere adăugată de coleg (cu confirmare)
+  const handleDayToggle = (event: React.MouseEvent<HTMLElement>, newDays: string[]) => {
+    setActiveDays(newDays);
+  };
+
   const handleConfirmRemove = async () => {
     if (!deviceToDelete) return;
-    // Extragem corect ID-ul
     const deviceId = (deviceToDelete as any)._id?.$oid || (deviceToDelete as any)._id;
     await handleRemove(deviceId);
     setDeviceToDelete(null);
@@ -89,7 +120,6 @@ const DeviceTable = () => {
       if (!response.ok) {
         throw new Error(`Failed to delete device: ${response.status}`);
       }
-      // Păstrăm reîncărcarea datelor instant pe care ai făcut-o tu
       fetchDevices(); 
     } catch (error) {
       console.error("Error deleting device:", error);
@@ -145,59 +175,32 @@ const DeviceTable = () => {
     data: devices,
     enableRowActions: true,
     positionActionsColumn: "last",
-    muiTableContainerProps: {},
-    muiTablePaperProps: {
-      elevation: 0,
+    paginationDisplayMode: "pages",
+    initialState: { pagination: { pageSize: 5, pageIndex: 0 } },
+    muiPaginationProps: {
+      color: "primary",
+      shape: "rounded",
+      variant: "outlined",
+      showRowsPerPage: true,
     },
+    muiTableContainerProps: {},
+    muiTablePaperProps: { elevation: 0 },
     renderTopToolbarCustomActions: () => (
-      <Button
-        variant="outlined"
-        startIcon={<AddIcon />}
-        onClick={handleAddDialogOpen}
-      >
+      <Button variant="outlined" startIcon={<AddIcon />} onClick={handleAddDialogOpen}>
         Add Device
       </Button>
     ),
     renderRowActionMenuItems: ({ row, closeMenu }) => [
-      <MenuItem
-        key="schedule"
-        onClick={() => {
-          handleAction("schedule", row.original);
-          closeMenu();
-        }}
-        sx={{ py: 1.5, px: 2 }}
-      >
-        <ListItemIcon>
-          <EventIcon fontSize="small" color="primary" />
-        </ListItemIcon>
+      <MenuItem key="schedule" onClick={() => { handleAction("schedule", row.original); closeMenu(); }} sx={{ py: 1.5, px: 2 }}>
+        <ListItemIcon><EventIcon fontSize="small" color="primary" /></ListItemIcon>
         <ListItemText>Programa</ListItemText>
       </MenuItem>,
-
-      <MenuItem
-        key="edit"
-        onClick={() => {
-          handleAction("edit", row.original);
-          closeMenu();
-        }}
-        sx={{ py: 1.5, px: 2 }}
-      >
-        <ListItemIcon>
-          <EditIcon fontSize="small" sx={{ color: 'text.secondary' }} />
-        </ListItemIcon>
+      <MenuItem key="edit" onClick={() => { handleAction("edit", row.original); closeMenu(); }} sx={{ py: 1.5, px: 2 }}>
+        <ListItemIcon><EditIcon fontSize="small" sx={{ color: 'text.secondary' }} /></ListItemIcon>
         <ListItemText>Edita</ListItemText>
       </MenuItem>,
-
-      <MenuItem
-        key="remove"
-        onClick={() => {
-          handleAction("remove", row.original);
-          closeMenu();
-        }}
-        sx={{ py: 1.5, px: 2, color: "error.main" }}
-      >
-        <ListItemIcon>
-          <DeleteIcon fontSize="small" color="error" />
-        </ListItemIcon>
+      <MenuItem key="remove" onClick={() => { handleAction("remove", row.original); closeMenu(); }} sx={{ py: 1.5, px: 2, color: "error.main" }}>
+        <ListItemIcon><DeleteIcon fontSize="small" color="error" /></ListItemIcon>
         <ListItemText>Elimina</ListItemText>
       </MenuItem>,
     ],
@@ -208,7 +211,29 @@ const DeviceTable = () => {
     try {
       if (selectedAction === "schedule") {
         const deviceId = (selectedDevice as any)._id?.$oid || (selectedDevice as any)._id;
-        console.log(`Scheduled action for device ${deviceId}`);
+        
+        const scheduleData = {
+          deviceId,
+          alwaysOn,
+          onTime: alwaysOn ? null : onTime,
+          offTime: alwaysOn ? null : offTime,
+          activeDays: alwaysOn ? [] : activeDays,
+        };
+
+        const response = await fetch('/api/schedule', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify(scheduleData),
+        });
+
+        if (response.ok) {
+          console.log("Datele au ajuns cu succes in baza de date!");
+          fetchDevices(); 
+        } else {
+          console.error("Eroare la trimiterea datelor.");
+        }
       }
       handleScheduleClose();
     } catch (error) {
@@ -235,26 +260,58 @@ const DeviceTable = () => {
       <PageHeader title="Devices" breadcrumbItems={["Home", "Devices"]} />
       <MaterialReactTable table={table} />
       
-      {/* Dialog Schedule */}
-      <Dialog open={isScheduleDialogOpen} onClose={handleScheduleClose}>
-        <DialogTitle>Schedule Action</DialogTitle>
+      <Dialog open={isScheduleDialogOpen} onClose={handleScheduleClose} maxWidth="sm" fullWidth>
+        <DialogTitle sx={{ borderBottom: 1, borderColor: 'divider', pb: 2, mb: 2 }}>
+          Schedule — {selectedDevice?.deviceName}
+        </DialogTitle>
         <DialogContent>
-          Schedule dialog content...
+          <FormControlLabel
+            control={<Switch checked={alwaysOn} onChange={(e) => setAlwaysOn(e.target.checked)} />}
+            label="No schedule (always on)"
+            sx={{ mb: 3 }}
+          />
+
+          {/* AICI ESTE MODIFICAREA PENTRU ALINIERA ORIZONTALĂ */}
+          <Box sx={{ display: "flex", flexDirection: "row", gap: 2, mb: 3 }}>
+            <TextField
+              label="On time" type="time" value={onTime}
+              onChange={(e) => setOnTime(e.target.value)} disabled={alwaysOn} fullWidth InputLabelProps={{ shrink: true }}
+              sx={{ flex: 1 }}
+            />
+            <TextField
+              label="Off time" type="time" value={offTime}
+              onChange={(e) => setOffTime(e.target.value)} disabled={alwaysOn} fullWidth InputLabelProps={{ shrink: true }}
+              sx={{ flex: 1 }}
+            />
+          </Box>
+
+          <Typography variant="body2" color="text.secondary" gutterBottom>
+            Active days
+          </Typography>
+          <ToggleButtonGroup
+            value={activeDays} onChange={handleDayToggle} disabled={alwaysOn} aria-label="active days" size="small" fullWidth
+          >
+            {daysOfWeek.map((day) => (
+              <ToggleButton key={day} value={day} aria-label={day}>
+                {day}
+              </ToggleButton>
+            ))}
+          </ToggleButtonGroup>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleScheduleClose}>Cancel</Button>
-          <Button onClick={handlePerformAction} color="primary">
-            Schedule
+        <DialogActions sx={{ pt: 2, pb: 2, pr: 3 }}>
+          <Button onClick={handleScheduleClose} sx={{ fontWeight: 'bold' }}>
+            CANCEL
+          </Button>
+          <Button onClick={handlePerformAction} variant="contained" color="primary">
+            SAVE SCHEDULE
           </Button>
         </DialogActions>
       </Dialog>
       
-      {/* Dialog Confirmare Stergere (Modificarea colegului) */}
       <Dialog open={Boolean(deviceToDelete)} onClose={handleCancelRemove}>
         <DialogTitle>Delete Device</DialogTitle>
         <DialogContent>
-          Are you sure you want to delete "{deviceToDelete?.deviceName}"? This
-          action cannot be undone.
+          Are you sure you want to delete "{deviceToDelete?.deviceName}"? This action cannot be undone.
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCancelRemove}>Cancel</Button>
@@ -264,13 +321,7 @@ const DeviceTable = () => {
         </DialogActions>
       </Dialog>
       
-      {/* Formularul redenumit de coleg */}
-      <DeviceForm
-        open={isAddDialogOpen}
-        device={editingDevice}
-        onClose={handleAddDialogClose}
-        onSuccess={handleAddDeviceSuccess}
-      />
+      <DeviceForm open={isAddDialogOpen} device={editingDevice} onClose={handleAddDialogClose} onSuccess={handleAddDeviceSuccess} />
     </Container>
   );
 };
